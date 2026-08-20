@@ -1,17 +1,18 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
-
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local isSniperActive = false
 
+-- ScreenGUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "XX1_ModMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
+-- Menyu Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 220, 0, 130)
 MainFrame.Position = UDim2.new(0.5, -110, 0.3, 0)
@@ -22,6 +23,7 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
+-- Başlıq
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -31,6 +33,7 @@ Title.TextSize = 16
 Title.Font = Enum.Font.SourceSansBold
 Title.Parent = MainFrame
 
+-- Düymə
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
 ToggleBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
@@ -41,12 +44,38 @@ ToggleBtn.TextSize = 15
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.Parent = MainFrame
 
-local function tryRedeemAll(code)
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("RemoteEvent") and (string.find(string.lower(v.Name), "code") or string.find(string.lower(v.Name), "redeem")) then
-            pcall(function()
-                v:FireServer(code)
-            end)
+-- Steal a Brainrot üçün xüsusi kod göndərmə funksiyası
+local function sendBrainrotCode(code)
+    -- 1. Birbaşa ekrandakı TextBox-a yazır və düyməyə basır
+    for _, v in pairs(PlayerGui:GetDescendants()) do
+        if v:IsA("TextBox") then
+            v.Text = code
+            local parent = v.Parent
+            if parent then
+                for _, btn in pairs(parent:GetDescendants()) do
+                    if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+                        pcall(function()
+                            firesignal(btn.MouseButton1Click)
+                        end)
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Əgər oyun RemoteEvent istifadə edirsə, birbaşa serverə ötürür
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = string.lower(obj.Name)
+            if string.find(name, "code") or string.find(name, "redeem") or string.find(name, "claim") then
+                pcall(function()
+                    if obj:IsA("RemoteEvent") then
+                        obj:FireServer(code)
+                    else
+                        obj:InvokeServer(code)
+                    end
+                end)
+            end
         end
     end
 end
@@ -65,8 +94,8 @@ end)
 local function onMessage(content)
     if isSniperActive then
         local cleanCode = string.match(content, "%w+")
-        if cleanCode then
-            tryRedeemAll(cleanCode)
+        if cleanCode and #cleanCode >= 3 then
+            sendBrainrotCode(cleanCode)
         end
     end
 end
