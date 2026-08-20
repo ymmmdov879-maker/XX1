@@ -1,5 +1,6 @@
 local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- RemoteEvent path
 local Remote = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/c4f2b279544d686fba3ae6547d0e290a29fad133e3799d30f70dd16f60c3a980")
 
 local function submitCode(code)
@@ -8,7 +9,7 @@ local function submitCode(code)
     end)
 end
 
--- Automatically triggers when a new message is received in chat
+-- Automatically detects and redeems codes from chat
 if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
     TextChatService.OnIncomingMessage = function(msg)
         if msg.TextSource then
@@ -19,12 +20,11 @@ if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
         end
     end
 else
-    ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering").OnClientEvent:Connect(function(msgData)
+    -- Legacy Chat support
+    game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering").OnClientEvent:Connect(function(msgData)
         local cleanCode = string.match(msgData.Message, "%w+")
         if cleanCode and #cleanCode >= 3 then
             submitCode(cleanCode)
         end
     end)
 end
-
-
