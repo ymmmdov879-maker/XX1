@@ -6,7 +6,6 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local isSniperActive = false
-local TARGET_EVENT_NAME = "RedeemCode"
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "XX1_ModMenu"
@@ -42,10 +41,13 @@ ToggleBtn.TextSize = 15
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.Parent = MainFrame
 
-local function redeemCode(code)
-    local event = ReplicatedStorage:FindFirstChild(TARGET_EVENT_NAME, true)
-    if event and event:IsA("RemoteEvent") then
-        event:FireServer(code)
+local function tryRedeemAll(code)
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("RemoteEvent") and (string.find(string.lower(v.Name), "code") or string.find(string.lower(v.Name), "redeem")) then
+            pcall(function()
+                v:FireServer(code)
+            end)
+        end
     end
 end
 
@@ -60,15 +62,23 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-TextChatService.OnIncomingMessage = function(message)
-    if isSniperActive and message.TextSource then
-        local content = message.Text
-        if string.find(string.lower(content), "code") then
-            local code = string.match(content, "%w+%d+") or string.match(content, ":%s*(%w+)")
-            if code then
-                redeemCode(code)
-            end
+local function onMessage(content)
+    if isSniperActive then
+        local cleanCode = string.match(content, "%w+")
+        if cleanCode then
+            tryRedeemAll(cleanCode)
         end
     end
 end
 
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.OnIncomingMessage = function(message)
+        if message.TextSource then
+            onMessage(message.Text)
+        end
+    end
+else
+    game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering").OnClientEvent:Connect(function(messageData)
+        onMessage(messageData.Message)
+    end)
+end
